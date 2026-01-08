@@ -1,0 +1,195 @@
+import Shop from "../models/Shop.js";
+import User from "../models/User.js";
+
+// @desc    Create a new shop
+// @route   POST /api/shops
+// @access  Private (Shop Owner)
+export const createShop = async (req, res) => {
+  try {
+    const {
+      shopName,
+      ownerName,
+      description,
+      categories,
+      street,
+      buildingFloor,
+      phone,
+      email,
+      whatsapp,
+      profileImage,
+      workingHours,
+    } = req.body;
+
+    // Check if user already has a shop
+    const existingShop = await Shop.findOne({ owner: req.user._id });
+    if (existingShop) {
+      res.status(400);
+      throw new Error("You already have a shop registered");
+    }
+
+    // Create shop
+    const shop = await Shop.create({
+      shopName,
+      ownerName,
+      owner: req.user._id,
+      description,
+      categories,
+      street,
+      buildingFloor,
+      phone,
+      email,
+      whatsapp,
+      profileImage,
+      workingHours,
+    });
+
+    // Update user's shop reference
+    await User.findByIdAndUpdate(req.user._id, { shop: shop._id });
+
+    res.status(201).json(shop);
+  } catch (error) {
+    res.status(res.statusCode || 500).json({ message: error.message });
+  }
+};
+
+// @desc    Get all shops (with filters)
+// @route   GET /api/shops
+// @access  Public
+export const getShops = async (req, res) => {
+  try {
+    const { category, street, search, page = 1, limit = 20 } = req.query;
+
+    const query = { isActive: true };
+
+    // Filter by category
+    if (category) {
+      query.categories = category;
+    }
+
+    // Filter by street
+    if (street) {
+      query.street = street;
+    }
+
+    // Search by name or description
+    if (search) {
+      query.$text = { $search: search };
+    }
+
+    const shops = await Shop.find(query)
+      .populate("owner", "name email phone")
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .sort({ createdAt: -1 });
+
+    const count = await Shop.countDocuments(query);
+
+    res.json({
+      shops,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+      total: count,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get single shop by ID
+// @route   GET /api/shops/:id
+// @access  Public
+export const getShopById = async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id).populate(
+      "owner",
+      "name email phone"
+    );
+
+    if (shop) {
+      res.json(shop);
+    } else {
+      res.status(404);
+      throw new Error("Shop not found");
+    }
+  } catch (error) {
+    res.status(res.statusCode || 500).json({ message: error.message });
+  }
+};
+
+// @desc    Get my shop
+// @route   GET /api/shops/my/shop
+// @access  Private (Shop Owner)
+export const getMyShop = async (req, res) => {
+  try {
+    const shop = await Shop.findOne({ owner: req.user._id });
+
+    if (shop) {
+      res.json(shop);
+    } else {
+      res.status(404);
+      throw new Error("You don't have a shop yet");
+    }
+  } catch (error) {
+    res.status(res.statusCode || 500).json({ message: error.message });
+  }
+};
+
+// @desc    Update shop
+// @route   PUT /api/shops/:id
+// @access  Private (Shop Owner)
+export const updateShop = async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id);
+
+    if (!shop) {
+      res.status(404);
+      throw new Error("Shop not found");
+    }
+
+    // Check if user owns the shop
+    if (shop.owner.toString() !== req.user._id.toString()) {
+      res.status(403);
+      throw new Error("Not authorized to update this shop");
+    }
+
+    // Update shop fields
+    const updatedShop = await Shop.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    res.json(updatedShop);
+  } catch (error) {
+    res.status(res.statusCode || 500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete shop
+// @route   DELETE /api/shops/:id
+// @access  Private (Shop Owner)
+export const deleteShop = async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id);
+
+    if (!shop) {
+      res.status(404);
+      throw new Error("Shop not found");
+    }
+
+    // Check if user owns the shop
+    if (shop.owner.toString() !== req.user._id.toString()) {
+      res.status(403);
+      throw new Error("Not authorized to delete this shop");
+    }
+
+    await shop.deleteOne();
+
+    // Remove shop reference from user
+    await User.findByIdAndUpdate(req.user._id, { shop: null });
+
+    res.json({ message: "Shop removed" });
+  } catch (error) {
+    res.status(res.statusCode || 500).json({ message: error.message });
+  }
+};
