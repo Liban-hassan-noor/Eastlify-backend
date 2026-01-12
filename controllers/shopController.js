@@ -16,7 +16,6 @@ export const createShop = async (req, res) => {
       phone,
       email,
       whatsapp,
-      profileImage,
       workingHours,
     } = req.body;
 
@@ -27,20 +26,34 @@ export const createShop = async (req, res) => {
       throw new Error("You already have a shop registered");
     }
 
+    // Extract images from Cloudinary (req.files)
+    let profileImage = "";
+    let coverImage = "";
+
+    if (req.files) {
+      if (req.files.profileImage) {
+        profileImage = req.files.profileImage[0].path;
+      }
+      if (req.files.coverImage) {
+        coverImage = req.files.coverImage[0].path;
+      }
+    }
+
     // Create shop
     const shop = await Shop.create({
       shopName,
       ownerName,
       owner: req.user._id,
       description,
-      categories,
+      categories: categories ? (typeof categories === 'string' ? JSON.parse(categories) : categories) : [],
       street,
       buildingFloor,
       phone,
       email,
       whatsapp,
       profileImage,
-      workingHours,
+      coverImage,
+      workingHours: workingHours ? (typeof workingHours === 'string' ? JSON.parse(workingHours) : workingHours) : undefined,
     });
 
     // Update user's shop reference
@@ -152,10 +165,31 @@ export const updateShop = async (req, res) => {
       throw new Error("Not authorized to update this shop");
     }
 
+    // Prepare update data
+    const updateData = { ...req.body };
+
+    // Handle JSON strings from multipart/form-data
+    if (typeof updateData.categories === 'string') {
+      updateData.categories = JSON.parse(updateData.categories);
+    }
+    if (typeof updateData.workingHours === 'string') {
+      updateData.workingHours = JSON.parse(updateData.workingHours);
+    }
+
+    // Extract new images from Cloudinary if uploaded
+    if (req.files) {
+      if (req.files.profileImage) {
+        updateData.profileImage = req.files.profileImage[0].path;
+      }
+      if (req.files.coverImage) {
+        updateData.coverImage = req.files.coverImage[0].path;
+      }
+    }
+
     // Update shop fields
     const updatedShop = await Shop.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
 

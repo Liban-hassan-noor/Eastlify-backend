@@ -94,6 +94,18 @@ const shopSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    totalCalls: {
+      type: Number,
+      default: 0,
+    },
+    orders: {
+      type: Number,
+      default: 0,
+    },
+    sales: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

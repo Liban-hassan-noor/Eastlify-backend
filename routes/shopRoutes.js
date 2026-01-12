@@ -8,6 +8,7 @@ import {
   deleteShop,
 } from "../controllers/shopController.js";
 import { protect, shopOwner } from "../middleware/auth.js";
+import upload from "../middleware/upload.js";
 
 const router = express.Router();
 
@@ -16,9 +17,31 @@ router.get("/", getShops);
 
 // Protected routes (specific paths BEFORE parameterized paths!)
 router.get("/my/shop", protect, shopOwner, getMyShop);
-router.post("/", protect, shopOwner, createShop);
+
+router.post(
+  "/",
+  protect,
+  shopOwner,
+  upload.fields([
+    { name: "profileImage", maxCount: 1 },
+    { name: "coverImage", maxCount: 1 },
+  ]),
+  createShop
+);
+
 router.get("/:id", getShopById);
-router.put("/:id", protect, shopOwner, updateShop);
+
+router.put(
+  "/:id",
+  protect,
+  shopOwner,
+  upload.fields([
+    { name: "profileImage", maxCount: 1 },
+    { name: "coverImage", maxCount: 1 },
+  ]),
+  updateShop
+);
+
 router.delete("/:id", protect, shopOwner, deleteShop);
 
 export default router;

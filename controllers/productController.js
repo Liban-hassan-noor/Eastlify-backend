@@ -12,7 +12,6 @@ export const createProduct = async (req, res) => {
       price,
       compareAtPrice,
       category,
-      images,
       stock,
       inStock,
       tags,
@@ -26,23 +25,28 @@ export const createProduct = async (req, res) => {
       throw new Error("You need to create a shop first");
     }
 
+    // Extract product images from Cloudinary (req.files)
+    const images = req.files ? req.files.map(file => file.path) : [];
+
     // Create product
     const product = await Product.create({
       name,
       description,
-      price,
-      compareAtPrice,
+      price: Number(price) || 0,
+      compareAtPrice: compareAtPrice ? Number(compareAtPrice) : undefined,
       category,
       images,
       shop: shop._id,
-      stock,
-      inStock,
-      tags,
+      stock: Number(stock) || 0,
+      inStock: inStock === 'true' || inStock === true, 
+      tags: tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [],
     });
 
     res.status(201).json(product);
   } catch (error) {
-    res.status(res.statusCode || 500).json({ message: error.message });
+    console.error("Create Product Backend Error:", error);
+    console.error("Request Body:", req.body);
+    res.status(400).json({ message: error.message });
   }
 };
 
@@ -166,16 +170,76 @@ export const updateProduct = async (req, res) => {
       throw new Error("Not authorized to update this product");
     }
 
+    // Prepare update data
+    const updateData = { ...req.body };
+
+    // Handle JSON strings from multipart/form-data
+    if (updateData.tags && typeof updateData.tags === 'string') {
+      try {
+        updateData.tags = JSON.parse(updateData.tags);
+      } catch (e) {
+        updateData.tags = [];
+      }
+    }
+    
+    if (updateData.inStock !== undefined) {
+      updateData.inStock = updateData.inStock === 'true' || updateData.inStock === true;
+    }
+    if (updateData.price !== undefined) {
+      updateData.price = Number(updateData.price) || 0;
+    }
+    if (updateData.compareAtPrice !== undefined) {
+      updateData.compareAtPrice = updateData.compareAtPrice ? Number(updateData.compareAtPrice) : null;
+    }
+    if (updateData.stock !== undefined) {
+      updateData.stock = Number(updateData.stock) || 0;
+    }
+
+    // Handle images from req.body (existing URLs)
+    let finalImages = [];
+    
+    // 1. Keep existing images sent from frontend
+    if (req.body.existingImages) {
+       if (Array.isArray(req.body.existingImages)) {
+         finalImages = [...req.body.existingImages];
+       } else {
+         finalImages = [req.body.existingImages];
+       }
+    } else if (req.body.images) {
+       // Multer might put single string fields in req.body.images if not files
+       if (typeof req.body.images === 'string') {
+          try {
+            const parsed = JSON.parse(req.body.images);
+            if (Array.isArray(parsed)) finalImages = parsed;
+            else if (req.body.images.startsWith('http')) finalImages = [req.body.images];
+          } catch (e) {
+            if (req.body.images.startsWith('http')) finalImages = [req.body.images];
+          }
+       } else if (Array.isArray(req.body.images)) {
+          finalImages = req.body.images.filter(img => typeof img === 'string' && img.startsWith('http'));
+       }
+    }
+
+    // 2. Add new images from Cloudinary
+    if (req.files && req.files.length > 0) {
+      const newImages = req.files.map(file => file.path);
+      finalImages = [...finalImages, ...newImages];
+    }
+    
+    updateData.images = finalImages.slice(0, 5);
+
     // Update product
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
 
     res.json(updatedProduct);
   } catch (error) {
-    res.status(res.statusCode || 500).json({ message: error.message });
+    console.error("Update Product Backend Error:", error);
+    console.error("Request Body:", req.body);
+    res.status(400).json({ message: error.message });
   }
 };
 

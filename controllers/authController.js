@@ -57,12 +57,7 @@ export const register = async (req, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
-        shop: {
-          _id: shop._id,
-          shopName: shop.shopName,
-          street: shop.street,
-          categories: shop.categories,
-        },
+        shop,
         token: generateToken(user._id),
       });
     } else {
@@ -82,7 +77,7 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
 
     // Check for user email
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email }).select("+password").populate("shop");
 
     if (user && (await user.matchPassword(password))) {
       res.json({
