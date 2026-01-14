@@ -16,11 +16,7 @@ dotenv.config();
 connectDB();
 
 const app = express();
-/* ✅ CORS — PUT IT HERE */
-app.use(cors({
-  origin: "*", // allow all for now (testing)
-  credentials: true
-}));
+app.use(cors()); // Allow all for testing, works better with origin: "*" defaults
 
 // Middleware
 //app.use(cors());
