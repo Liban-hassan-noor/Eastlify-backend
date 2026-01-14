@@ -85,15 +85,22 @@ export const getShops = async (req, res) => {
     }
 
     // Search by name or description
+    
     if (search) {
-      query.$text = { $search: search };
-    }
+  query.$or = [
+    { shopName: { $regex: search, $options: "i" } },
+    { description: { $regex: search, $options: "i" } },
+  ];
+}
 
-    const shops = await Shop.find(query)
-      .populate("owner", "name email phone")
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .sort({ createdAt: -1 });
+
+   const shops = await Shop.find(query)
+  .populate("owner", "name email phone")
+  .sort({ createdAt: -1 })
+  .skip((page - 1) * limit)
+  .limit(Number(limit))
+  .lean();
+
 
     const count = await Shop.countDocuments(query);
 
