@@ -1,4 +1,5 @@
 import Shop from "../models/Shop.js";
+import Activity from "../models/Activity.js";
 import User from "../models/User.js";
 
 // @desc    Create a new shop
@@ -232,3 +233,82 @@ export const deleteShop = async (req, res) => {
     res.status(res.statusCode || 500).json({ message: error.message });
   }
 };
+
+// @desc    Record shop activity (Call/WhatsApp/Sale)
+// @route   POST /api/shops/:id/activity
+// @access  Public (for calls/whatsapp) or Private (for sales)
+export const recordActivity = async (req, res) => {
+  try {
+    const { type, detail, item, amount } = req.body;
+    const shopId = req.params.id;
+
+    const shop = await Shop.findById(shopId);
+    if (!shop) {
+      res.status(404);
+      throw new Error("Shop not found");
+    }
+
+    // Logic for different activity types
+    if (type === "call" || type === "whatsapp") {
+      shop.totalCalls += 1;
+    } else if (type === "sale") {
+      // Sales should be authenticated (only owner can record sales for their shop)
+      if (!req.user || shop.owner.toString() !== req.user._id.toString()) {
+        res.status(403);
+        throw new Error("Only shop owners can record sales");
+      }
+      shop.sales += Number(amount) || 0;
+      shop.orders += 1;
+    }
+
+    await shop.save();
+
+    // Create activity record
+    const activity = await Activity.create({
+      shop: shopId,
+      type,
+      detail,
+      item,
+      amount: Number(amount) || 0,
+    });
+
+    res.status(201).json({
+      success: true,
+      shop: {
+        totalCalls: shop.totalCalls,
+        sales: shop.sales,
+        orders: shop.orders,
+      },
+      activity,
+    });
+  } catch (error) {
+    res.status(res.statusCode || 500).json({ message: error.message });
+  }
+};
+
+// @desc    Get shop activities
+// @route   GET /api/shops/:id/activities
+// @access  Private (Shop Owner)
+export const getActivities = async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id);
+    if (!shop) {
+      res.status(404);
+      throw new Error("Shop not found");
+    }
+
+    if (shop.owner.toString() !== req.user._id.toString()) {
+      res.status(403);
+      throw new Error("Not authorized to view these activities");
+    }
+
+    const activities = await Activity.find({ shop: req.params.id })
+      .sort({ createdAt: -1 })
+      .limit(10);
+
+    res.json(activities);
+  } catch (error) {
+    res.status(res.statusCode || 500).json({ message: error.message });
+  }
+};
+

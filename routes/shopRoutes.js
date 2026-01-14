@@ -6,6 +6,8 @@ import {
   getMyShop,
   updateShop,
   deleteShop,
+  recordActivity,
+  getActivities,
 } from "../controllers/shopController.js";
 import { protect, shopOwner } from "../middleware/auth.js";
 import upload from "../middleware/upload.js";
@@ -41,6 +43,10 @@ router.put(
   ]),
   updateShop
 );
+
+router.post("/:id/activity", recordActivity); // Public for calls/whatsapp
+router.post("/:id/sale", protect, shopOwner, recordActivity); // Protected for sales
+router.get("/:id/activities", protect, shopOwner, getActivities);
 
 router.delete("/:id", protect, shopOwner, deleteShop);
 
