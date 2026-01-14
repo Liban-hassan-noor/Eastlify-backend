@@ -12,5 +12,6 @@ const connectDB = async () => {
     process.exit(1);
   }
 };
+console.log("MONGO_URI exists:", !!process.env.MONGO_URI);
 
 export default connectDB;
