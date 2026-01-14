@@ -8,7 +8,6 @@ export const createShop = async (req, res) => {
   try {
     const {
       shopName,
-      ownerName,
       description,
       categories,
       street,
@@ -42,7 +41,6 @@ export const createShop = async (req, res) => {
     // Create shop
     const shop = await Shop.create({
       shopName,
-      ownerName,
       owner: req.user._id,
       description,
       categories: categories ? (typeof categories === 'string' ? JSON.parse(categories) : categories) : [],

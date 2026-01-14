@@ -7,11 +7,7 @@ const shopSchema = new mongoose.Schema(
       required: [true, "Please provide shop name"],
       trim: true,
     },
-    ownerName: {
-      type: String,
-      required: [true, "Please provide owner name"],
-      trim: true,
-    },
+
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

@@ -39,7 +39,6 @@ export const register = async (req, res) => {
       // 2. Create shop associated with this user
       const shop = await Shop.create({
         shopName,
-        ownerName: name,
         owner: user._id,
         street,
         categories: categories || [],

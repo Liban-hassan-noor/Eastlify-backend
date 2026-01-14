@@ -99,7 +99,6 @@ GET /api/shops?category=Electronics&street=First%20Avenue&page=1&limit=10
 ```json
 {
   "shopName": "Tech Hub",
-  "ownerName": "John Doe",
   "description": "Best electronics in Eastleigh",
   "categories": ["Electronics", "Phones"],
   "street": "First Avenue",
