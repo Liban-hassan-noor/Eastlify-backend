@@ -1,6 +1,15 @@
 import Product from "../models/Product.js";
 import Shop from "../models/Shop.js";
 
+// Helper to parse numbers safely
+const parseNumber = (value, defaultValue = undefined) => {
+  if (value === null || value === undefined || value === '' || value === 'null' || value === 'undefined') {
+    return defaultValue;
+  }
+  const num = Number(value);
+  return isNaN(num) ? defaultValue : num;
+};
+
 // @desc    Create a new product
 // @route   POST /api/products
 // @access  Private (Shop Owner)
@@ -32,12 +41,12 @@ export const createProduct = async (req, res) => {
     const product = await Product.create({
       name,
       description,
-      price: Number(price) || 0,
-      compareAtPrice: compareAtPrice ? Number(compareAtPrice) : undefined,
+      price: parseNumber(price, 0),
+      compareAtPrice: parseNumber(compareAtPrice, undefined),
       category,
       images,
       shop: shop._id,
-      stock: Number(stock) || 0,
+      stock: parseNumber(stock, 0),
       inStock: inStock === 'true' || inStock === true, 
       tags: tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [],
     });
@@ -186,13 +195,13 @@ export const updateProduct = async (req, res) => {
       updateData.inStock = updateData.inStock === 'true' || updateData.inStock === true;
     }
     if (updateData.price !== undefined) {
-      updateData.price = Number(updateData.price) || 0;
+      updateData.price = parseNumber(updateData.price, 0);
     }
     if (updateData.compareAtPrice !== undefined) {
-      updateData.compareAtPrice = updateData.compareAtPrice ? Number(updateData.compareAtPrice) : null;
+      updateData.compareAtPrice = parseNumber(updateData.compareAtPrice, null);
     }
     if (updateData.stock !== undefined) {
-      updateData.stock = Number(updateData.stock) || 0;
+      updateData.stock = parseNumber(updateData.stock, 0);
     }
 
     // Handle images from req.body (existing URLs)
