@@ -171,6 +171,9 @@ export const updateShop = async (req, res) => {
       throw new Error("Not authorized to update this shop");
     }
 
+    console.log("Update Shop Request Files:", req.files);
+    console.log("Update Shop Request Body Fields:", Object.keys(req.body));
+
     // Prepare update data and sanitize (exclude fields that shouldn't be updated directly)
     const updateData = { ...req.body };
     const fieldsToExclude = ["_id", "owner", "createdAt", "updatedAt", "__v", "isVerified", "isActive"];
