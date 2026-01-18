@@ -171,15 +171,25 @@ export const updateShop = async (req, res) => {
       throw new Error("Not authorized to update this shop");
     }
 
-    // Prepare update data
+    // Prepare update data and sanitize (exclude fields that shouldn't be updated directly)
     const updateData = { ...req.body };
+    const fieldsToExclude = ["_id", "owner", "createdAt", "updatedAt", "__v", "isVerified", "isActive"];
+    fieldsToExclude.forEach((field) => delete updateData[field]);
 
     // Handle JSON strings from multipart/form-data
     if (typeof updateData.categories === 'string') {
-      updateData.categories = JSON.parse(updateData.categories);
+      try {
+        updateData.categories = JSON.parse(updateData.categories);
+      } catch (e) {
+        console.error("Failed to parse categories:", e);
+      }
     }
     if (typeof updateData.workingHours === 'string') {
-      updateData.workingHours = JSON.parse(updateData.workingHours);
+      try {
+        updateData.workingHours = JSON.parse(updateData.workingHours);
+      } catch (e) {
+        console.error("Failed to parse workingHours:", e);
+      }
     }
 
     // Extract new images from Cloudinary if uploaded
@@ -201,6 +211,7 @@ export const updateShop = async (req, res) => {
 
     res.json(updatedShop);
   } catch (error) {
+    console.error("Update Shop Error:", error);
     res.status(res.statusCode || 500).json({ message: error.message });
   }
 };
