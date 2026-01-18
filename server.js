@@ -1,8 +1,10 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 console.log("SERVER FILE LOADED");
 
 
 import express from "express";
-import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
@@ -12,7 +14,6 @@ import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import router from "./routes/authRoutes.js";
 import shopRoutes from "./routes/shopRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
-dotenv.config();
 connectDB();
 
 const app = express();
