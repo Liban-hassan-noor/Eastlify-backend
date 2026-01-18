@@ -26,6 +26,13 @@ export const createProduct = async (req, res) => {
       tags,
     } = req.body;
 
+    // Sanitize req.body for "undefined" and "null" strings
+    Object.keys(req.body).forEach(key => {
+      if (req.body[key] === 'undefined' || req.body[key] === 'null') {
+        req.body[key] = undefined;
+      }
+    });
+
     // Get user's shop
     const shop = await Shop.findOne({ owner: req.user._id });
 
@@ -181,6 +188,13 @@ export const updateProduct = async (req, res) => {
 
     // Prepare update data
     const updateData = { ...req.body };
+
+    // Sanitize updateData: remove "undefined" and "null" strings
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] === 'undefined' || updateData[key] === 'null') {
+        delete updateData[key];
+      }
+    });
 
     // Handle JSON strings from multipart/form-data
     if (updateData.tags && typeof updateData.tags === 'string') {

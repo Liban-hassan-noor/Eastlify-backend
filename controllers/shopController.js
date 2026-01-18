@@ -179,6 +179,13 @@ export const updateShop = async (req, res) => {
     const fieldsToExclude = ["_id", "owner", "createdAt", "updatedAt", "__v", "isVerified", "isActive"];
     fieldsToExclude.forEach((field) => delete updateData[field]);
 
+    // Sanitize updateData: remove "undefined" and "null" strings that might come from frontend FormData
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] === 'undefined' || updateData[key] === 'null') {
+        delete updateData[key];
+      }
+    });
+
     // Handle JSON strings from multipart/form-data
     if (typeof updateData.categories === 'string') {
       try {
