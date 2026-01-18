@@ -44,6 +44,7 @@ export const register = async (req, res) => {
         categories: categories || [],
         description: description || "",
         phone: phone, // Defaulting shop phone to owner phone
+        email: email, // Defaulting shop email to owner email
       });
 
       // 3. Link shop back to user
@@ -56,7 +57,7 @@ export const register = async (req, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
-        shop,
+        shop: shop, // Return the full shop object
         token: generateToken(user._id),
       });
     } else {
@@ -64,6 +65,7 @@ export const register = async (req, res) => {
       throw new Error("Invalid user data");
     }
   } catch (error) {
+    console.error("Registration error:", error);
     res.status(res.statusCode || 500).json({ message: error.message });
   }
 };
