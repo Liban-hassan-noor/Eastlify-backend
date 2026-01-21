@@ -171,15 +171,19 @@ export const updateShop = async (req, res) => {
       throw new Error("Not authorized to update this shop");
     }
 
-    console.log("Update Shop Request Files:", req.files);
-    console.log("Update Shop Request Body Fields:", Object.keys(req.body));
+    console.log("--- DEBUG: Update Shop START ---");
+    console.log("Shop ID:", req.params.id);
+    console.log("Files received:", req.files ? Object.keys(req.files) : "none");
+    console.log("Body fields:", Object.keys(req.body));
 
-    // Prepare update data and sanitize (exclude fields that shouldn't be updated directly)
+    // Prepare update data
     const updateData = { ...req.body };
+    
+    // Exclude fields that shouldn't be updated directly
     const fieldsToExclude = ["_id", "owner", "createdAt", "updatedAt", "__v", "isVerified", "isActive"];
     fieldsToExclude.forEach((field) => delete updateData[field]);
 
-    // Sanitize updateData: remove "undefined" and "null" strings that might come from frontend FormData
+    // Sanitize updateData: remove "undefined" and "null" strings
     Object.keys(updateData).forEach(key => {
       if (updateData[key] === 'undefined' || updateData[key] === 'null') {
         delete updateData[key];
@@ -202,15 +206,30 @@ export const updateShop = async (req, res) => {
       }
     }
 
-    // Extract new images from Cloudinary if uploaded
+    // Handle images: Priority to newly uploaded files
     if (req.files) {
-      if (req.files.profileImage) {
+      if (req.files.profileImage && req.files.profileImage[0]) {
+        console.log("Updating profileImage with new file:", req.files.profileImage[0].path);
         updateData.profileImage = req.files.profileImage[0].path;
       }
-      if (req.files.coverImage) {
+      if (req.files.coverImage && req.files.coverImage[0]) {
+        console.log("Updating coverImage with new file:", req.files.coverImage[0].path);
         updateData.coverImage = req.files.coverImage[0].path;
       }
     }
+
+    // Ensure we don't clear images if they aren't provided in body OR files
+    // But if they ARE provided as an empty string in the body, it means "remove"
+    if (updateData.profileImage === undefined && (!req.files || !req.files.profileImage)) {
+      delete updateData.profileImage;
+    }
+    if (updateData.coverImage === undefined && (!req.files || !req.files.coverImage)) {
+      delete updateData.coverImage;
+    }
+
+    console.log("Final updateData fields:", Object.keys(updateData));
+    if (updateData.profileImage) console.log("Final profileImage value (truncated):", updateData.profileImage.substring(0, 50) + "...");
+    if (updateData.coverImage) console.log("Final coverImage value (truncated):", updateData.coverImage.substring(0, 50) + "...");
 
     // Update shop fields
     const updatedShop = await Shop.findByIdAndUpdate(
@@ -219,6 +238,8 @@ export const updateShop = async (req, res) => {
       { new: true, runValidators: true }
     );
 
+    console.log("Shop updated successfully");
+    console.log("--- DEBUG: Update Shop END ---");
     res.json(updatedShop);
   } catch (error) {
     console.error("Update Shop Error:", error);
