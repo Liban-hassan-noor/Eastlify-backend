@@ -206,7 +206,7 @@ export const updateShop = async (req, res) => {
       }
     }
 
-    // Handle images: Priority to newly uploaded files
+    // Handle images: Priority to newly uploaded files, then existing URLs from body
     if (req.files) {
       if (req.files.profileImage && req.files.profileImage[0]) {
         console.log("Updating profileImage with new file:", req.files.profileImage[0].path);
@@ -218,13 +218,31 @@ export const updateShop = async (req, res) => {
       }
     }
 
-    // Ensure we don't clear images if they aren't provided in body OR files
-    // But if they ARE provided as an empty string in the body, it means "remove"
-    if (updateData.profileImage === undefined && (!req.files || !req.files.profileImage)) {
-      delete updateData.profileImage;
+    // If NO new file, check for existing URL sent from frontend
+    if (!req.files?.profileImage) {
+      if (req.body.existingProfileImage) {
+        console.log("Keeping existing profileImage:", req.body.existingProfileImage);
+        updateData.profileImage = req.body.existingProfileImage;
+      } else if (req.body.profileImage === '') {
+        // Explicit clear
+        updateData.profileImage = '';
+      } else {
+         // undefined or null -> do not touch
+         delete updateData.profileImage;
+      }
     }
-    if (updateData.coverImage === undefined && (!req.files || !req.files.coverImage)) {
-      delete updateData.coverImage;
+
+    if (!req.files?.coverImage) {
+      if (req.body.existingCoverImage) {
+        console.log("Keeping existing coverImage:", req.body.existingCoverImage);
+        updateData.coverImage = req.body.existingCoverImage;
+      } else if (req.body.coverImage === '') {
+        // Explicit clear
+        updateData.coverImage = '';
+      } else {
+         // undefined or null -> do not touch
+         delete updateData.coverImage;
+      }
     }
 
     console.log("Final updateData fields:", Object.keys(updateData));
