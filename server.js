@@ -14,6 +14,7 @@ import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import router from "./routes/authRoutes.js";
 import shopRoutes from "./routes/shopRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
 connectDB();
 
 const app = express();
@@ -33,6 +34,7 @@ app.get("/", (req, res) => {
       auth: "/api/auth",
       shops: "/api/shops",
       products: "/api/products",
+      reviews: "/api/reviews",
     },
   });
 });
@@ -40,6 +42,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", router);
 app.use("/api/shops", shopRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // Error handling
 app.use(notFound);
