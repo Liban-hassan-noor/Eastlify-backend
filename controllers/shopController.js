@@ -171,10 +171,7 @@ export const updateShop = async (req, res) => {
       throw new Error("Not authorized to update this shop");
     }
 
-    console.log("--- DEBUG: Update Shop START ---");
-    console.log("Shop ID:", req.params.id);
-    console.log("Files received:", req.files ? Object.keys(req.files) : "none");
-    console.log("Body fields:", Object.keys(req.body));
+
 
     // Prepare update data
     const updateData = { ...req.body };
@@ -207,47 +204,28 @@ export const updateShop = async (req, res) => {
     }
 
     // Handle images: Priority to newly uploaded files, then existing URLs from body
-    if (req.files) {
-      if (req.files.profileImage && req.files.profileImage[0]) {
-        console.log("Updating profileImage with new file:", req.files.profileImage[0].path);
-        updateData.profileImage = req.files.profileImage[0].path;
-      }
-      if (req.files.coverImage && req.files.coverImage[0]) {
-        console.log("Updating coverImage with new file:", req.files.coverImage[0].path);
-        updateData.coverImage = req.files.coverImage[0].path;
-      }
+    // This logic is now aligned with the robust product listing approach
+    let finalProfileImage = shop.profileImage;
+
+    // 1. Check if a new file was uploaded via Multer
+    if (req.files && req.files.profileImage && req.files.profileImage[0]) {
+      finalProfileImage = req.files.profileImage[0].path;
+    } 
+    // 2. If no new file, check for existing URL or explicit clear
+    else if (req.body.existingProfileImage !== undefined) {
+      finalProfileImage = req.body.existingProfileImage;
+    } else if (req.body.profileImage === '') {
+      finalProfileImage = '';
     }
 
-    // If NO new file, check for existing URL sent from frontend
-    if (!req.files?.profileImage) {
-      if (req.body.existingProfileImage) {
-        console.log("Keeping existing profileImage:", req.body.existingProfileImage);
-        updateData.profileImage = req.body.existingProfileImage;
-      } else if (req.body.profileImage === '') {
-        // Explicit clear
-        updateData.profileImage = '';
-      } else {
-         // undefined or null -> do not touch
-         delete updateData.profileImage;
-      }
-    }
+    updateData.profileImage = finalProfileImage;
+    
+    // We stop updating coverImage explicitly via this endpoint to simplify 
+    // as per user request to focus on one wide profile image.
+    delete updateData.coverImage;
+    delete updateData.existingCoverImage;
 
-    if (!req.files?.coverImage) {
-      if (req.body.existingCoverImage) {
-        console.log("Keeping existing coverImage:", req.body.existingCoverImage);
-        updateData.coverImage = req.body.existingCoverImage;
-      } else if (req.body.coverImage === '') {
-        // Explicit clear
-        updateData.coverImage = '';
-      } else {
-         // undefined or null -> do not touch
-         delete updateData.coverImage;
-      }
-    }
 
-    console.log("Final updateData fields:", Object.keys(updateData));
-    if (updateData.profileImage) console.log("Final profileImage value (truncated):", updateData.profileImage.substring(0, 50) + "...");
-    if (updateData.coverImage) console.log("Final coverImage value (truncated):", updateData.coverImage.substring(0, 50) + "...");
 
     // Update shop fields
     const updatedShop = await Shop.findByIdAndUpdate(
@@ -256,8 +234,7 @@ export const updateShop = async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    console.log("Shop updated successfully");
-    console.log("--- DEBUG: Update Shop END ---");
+
     res.json(updatedShop);
   } catch (error) {
     console.error("Update Shop Error:", error);
