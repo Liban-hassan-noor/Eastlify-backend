@@ -24,6 +24,9 @@ export const createProduct = async (req, res) => {
       stock,
       inStock,
       tags,
+      variants,
+      hasSizes,
+      hasColors,
     } = req.body;
 
     // Sanitize req.body for "undefined" and "null" strings
@@ -56,6 +59,11 @@ export const createProduct = async (req, res) => {
       stock: parseNumber(stock, 0),
       inStock: inStock === 'true' || inStock === true, 
       tags: tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [],
+      variants: variants && variants !== '[object Object]' 
+        ? (typeof variants === 'string' ? JSON.parse(variants) : variants) 
+        : [],
+      hasSizes: hasSizes === 'true' || hasSizes === true,
+      hasColors: hasColors === 'true' || hasColors === true,
     });
 
     res.status(201).json(product);
@@ -207,6 +215,19 @@ export const updateProduct = async (req, res) => {
     
     if (updateData.inStock !== undefined) {
       updateData.inStock = updateData.inStock === 'true' || updateData.inStock === true;
+    }
+    if (updateData.hasSizes !== undefined) {
+      updateData.hasSizes = updateData.hasSizes === 'true' || updateData.hasSizes === true;
+    }
+    if (updateData.hasColors !== undefined) {
+      updateData.hasColors = updateData.hasColors === 'true' || updateData.hasColors === true;
+    }
+    if (updateData.variants && typeof updateData.variants === 'string') {
+      try {
+        updateData.variants = JSON.parse(updateData.variants);
+      } catch (e) {
+        updateData.variants = [];
+      }
     }
     if (updateData.price !== undefined) {
       updateData.price = parseNumber(updateData.price, 0);
